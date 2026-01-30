@@ -1,0 +1,201 @@
+<div class="container">
+  <div class="header">
+    <h1>Pod Manager</h1>
+    <span class="connection-status" [class.connected]="isConnected">
+      {{ isConnected ? 'Bağlı' : 'Bağlantı yok' }}
+    </span>
+  </div>
+
+  <div class="actions">
+    <button class="primary-btn" (click)="openCreateModal()">+ Yeni Pod</button>
+    <button class="secondary-btn" (click)="refreshPods()">Yenile</button>
+  </div>
+
+  <!-- Loading -->
+  @if (loading) {
+    <div class="loading">
+      <div class="spinner"></div>
+      <span>Yükleniyor...</span>
+    </div>
+  }
+
+  <!-- Pod Listesi -->
+  @if (!loading) {
+    <div class="pod-list">
+      @if (pods.length === 0) {
+        <div class="empty">
+          <span class="empty-icon">📦</span>
+          <p>Henüz pod yok. Yeni bir pod oluşturun.</p>
+        </div>
+      }
+
+      @for (pod of pods; track pod.name) {
+        <div class="pod-card" [class.status-animation]="true">
+          <div class="pod-header">
+            <div class="pod-title">
+              <h3>{{ pod.name }}</h3>
+              @if (isJupyterPod(pod)) {
+                <span class="pod-badge jupyter">Jupyter</span>
+              }
+            </div>
+            <span class="status" [class]="getStatusClass(pod.status)">
+              <span class="status-dot"></span>
+              {{ pod.status }}
+            </span>
+          </div>
+
+          <div class="pod-info">
+            <div class="info-row">
+              <span class="info-label">Image:</span>
+              <span class="info-value">{{ pod.image }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">IP:</span>
+              <span class="info-value">{{ pod.podIP || 'Bekleniyor...' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Oluşturulma:</span>
+              <span class="info-value">{{ pod.createdAt | date:'short' }}</span>
+            </div>
+            @if (pod.nodePort) {
+              <div class="info-row">
+                <span class="info-label">NodePort:</span>
+                <a class="info-link" [href]="'http://localhost:' + pod.nodePort" target="_blank">
+                  localhost:{{ pod.nodePort }}
+                </a>
+              </div>
+            }
+          </div>
+
+          <div class="pod-actions">
+            <button class="action-btn terminal" (click)="openTerminal(pod.name)" title="Terminal">
+              <span class="btn-icon">🖥️</span>
+              <span class="btn-text">Terminal</span>
+            </button>
+            @if (isJupyterPod(pod)) {
+              <button class="action-btn jupyter" (click)="openJupyter(pod)" title="Jupyter">
+                <span class="btn-icon">📓</span>
+                <span class="btn-text">Jupyter</span>
+              </button>
+            }
+            <button class="action-btn logs" (click)="openLogs(pod.name)" title="Logs">
+              <span class="btn-icon">📋</span>
+              <span class="btn-text">Logs</span>
+            </button>
+
+            <button class="action-btn delete" (click)="deletePod(pod.name)" title="Sil">
+              <span class="btn-icon">🗑️</span>
+              <span class="btn-text">Sil</span>
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Terminal Modal -->
+  @if (selectedPod) {
+    <div class="modal-overlay" (click)="closeTerminal()">
+      <div class="terminal-modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header terminal-header">
+          <span>Terminal: {{ selectedPod }}</span>
+          <button class="close-btn" (click)="closeTerminal()">✕</button>
+        </div>
+        <app-terminal [podName]="selectedPod"></app-terminal>
+      </div>
+    </div>
+  }
+
+  <!-- Logs Modal -->
+  @if (showLogsModal) {
+    <div class="modal-overlay" (click)="closeLogs()">
+      <div class="logs-modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header logs-header">
+          <span>Logs: {{ logsPodName }}</span>
+          <button class="close-btn" (click)="closeLogs()">✕</button>
+        </div>
+        <div class="logs-container" #logsContainer>
+          @if (logsLoading) {
+            <div class="logs-loading">Log yükleniyor...</div>
+          } @else {
+            @for (log of podLogs; track $index) {
+              <div class="log-line">{{ log }}</div>
+            }
+            @if (podLogs.length === 0) {
+              <div class="logs-empty">Henüz log yok</div>
+            }
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Pod Form Modal -->
+  @if (showModal) {
+    <div class="modal-overlay" (click)="closeModal()">
+      <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>{{ modalMode === 'create' ? 'Yeni Pod Oluştur' : 'Pod Düzenle' }}</h3>
+          <button class="close-btn" (click)="closeModal()">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Pod Adı:</label>
+            <input
+              [(ngModel)]="formData.name"
+              placeholder="my-pod-1"
+              [disabled]="modalMode === 'edit'"
+            />
+          </div>
+
+          <!-- Template Selection -->
+          @if (modalMode === 'create') {
+            <div class="form-group">
+              <label>Template Seçin:</label>
+              <div class="template-grid">
+                @for (template of templates; track template.id) {
+                  <div
+                    class="template-card"
+                    [class.selected]="selectedTemplate.id === template.id"
+                    (click)="onTemplateChange(template.id)"
+                  >
+                    <span class="template-icon">{{ template.icon }}</span>
+                    <span class="template-name">{{ template.name }}</span>
+                  </div>
+                }
+              </div>
+              <p class="template-description">{{ selectedTemplate.description }}</p>
+            </div>
+          }
+
+          <div class="form-group">
+            <label>Image:</label>
+            <input [(ngModel)]="formData.image" placeholder="ubuntu:22.04" />
+          </div>
+
+          <div class="form-group">
+            <label>Jupyter Port:</label>
+            <input [(ngModel)]="formData.jupyterPort" type="number" />
+          </div>
+
+          <!-- Error Message -->
+          @if (formError) {
+            <div class="form-error">{{ formError }}</div>
+          }
+        </div>
+        <div class="modal-footer">
+          <button class="cancel-btn" (click)="closeModal()" [disabled]="isSubmitting">İptal</button>
+          <button class="submit-btn" (click)="submitForm()" [disabled]="isSubmitting">
+            @if (isSubmitting) {
+              <span class="btn-spinner"></span>
+              İşleniyor...
+            } @else {
+              {{ modalMode === 'create' ? 'Oluştur' : 'Güncelle' }}
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+</div>

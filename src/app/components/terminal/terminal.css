@@ -1,0 +1,30 @@
+.terminal-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 400px;
+  border: 1px solid #333;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.terminal-header {
+  background: #333;
+  color: white;
+  padding: 8px 12px;
+  font-size: 14px;
+}
+
+.terminal-container {
+  flex: 1;
+  background: #1e1e1e;
+  overflow: hidden;
+}
+
+/* xterm scroll düzeltmesi */
+.terminal-container .xterm {
+  height: 100%;
+}
+
+.terminal-container .xterm-viewport {
+  overflow-y: auto !important;
+}
