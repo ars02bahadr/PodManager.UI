@@ -6,11 +6,12 @@ import { PodService } from '../../services/pod.service';
 import { PodHubService } from '../../services/pod-hub.service';
 import { Pod, CreatePodRequest, UpdatePodRequest, PodTemplate, POD_TEMPLATES, PodLogEntry } from '../../models/pod';
 import { TerminalComponent } from '../terminal/terminal';
+import { FileManagerComponent } from '../file-manager/file-manager';
 
 @Component({
   selector: 'app-pod-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, TerminalComponent],
+  imports: [CommonModule, FormsModule, TerminalComponent, FileManagerComponent],
   templateUrl: './pod-list.html',
   styleUrls: ['./pod-list.css']
 })
@@ -42,6 +43,10 @@ export class PodListComponent implements OnInit, OnDestroy {
   logsPodName: string | null = null;
   podLogs: string[] = [];
   logsLoading = false;
+
+  // Files Modal
+  showFilesModal = false;
+  filesPodName: string | null = null;
 
   // SignalR connection state
   isConnected = false;
@@ -289,6 +294,18 @@ export class PodListComponent implements OnInit, OnDestroy {
     this.showLogsModal = false;
     this.logsPodName = null;
     this.podLogs = [];
+    this.cdr.detectChanges();
+  }
+
+  openFiles(podName: string): void {
+    this.filesPodName = podName;
+    this.showFilesModal = true;
+    this.cdr.detectChanges();
+  }
+
+  closeFiles(): void {
+    this.showFilesModal = false;
+    this.filesPodName = null;
     this.cdr.detectChanges();
   }
 

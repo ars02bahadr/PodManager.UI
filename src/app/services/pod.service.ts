@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpEvent } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { Pod, CreatePodRequest, UpdatePodRequest } from '../models/pod';
+import { FileInfo, UploadResponse } from '../models/file';
 
 @Injectable({
   providedIn: 'root'
@@ -35,6 +36,30 @@ export class PodService {
   getPodLogs(name: string): Observable<string[]> {
     return this.http.get(`${this.apiUrl}/${name}/logs`, { responseType: 'text' }).pipe(
       map(text => text.split('\n').filter(line => line.trim() !== ''))
+    );
+  }
+
+  uploadFile(podName: string, file: File, path: string): Observable<HttpEvent<UploadResponse>> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    return this.http.post<UploadResponse>(
+      `${this.apiUrl}/${podName}/files/upload?path=${encodeURIComponent(path)}`,
+      formData,
+      { reportProgress: true, observe: 'events' }
+    );
+  }
+
+  downloadFile(podName: string, path: string): Observable<Blob> {
+    return this.http.get(
+      `${this.apiUrl}/${podName}/files/download?path=${encodeURIComponent(path)}`,
+      { responseType: 'blob' }
+    );
+  }
+
+  listFiles(podName: string, path: string): Observable<FileInfo[]> {
+    return this.http.get<FileInfo[]>(
+      `${this.apiUrl}/${podName}/files/list?path=${encodeURIComponent(path)}`
     );
   }
 }

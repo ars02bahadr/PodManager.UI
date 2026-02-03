@@ -82,6 +82,10 @@
               <span class="btn-icon">📋</span>
               <span class="btn-text">Logs</span>
             </button>
+            <button class="action-btn files" (click)="openFiles(pod.name)" title="Dosyalar">
+              <span class="btn-icon">📁</span>
+              <span class="btn-text">Dosyalar</span>
+            </button>
 
             <button class="action-btn delete" (click)="deletePod(pod.name)" title="Sil">
               <span class="btn-icon">🗑️</span>
@@ -126,6 +130,19 @@
             }
           }
         </div>
+      </div>
+    </div>
+  }
+
+  <!-- Files Modal -->
+  @if (showFilesModal && filesPodName) {
+    <div class="modal-overlay" (click)="closeFiles()">
+      <div class="files-modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header files-header">
+          <span>Dosyalar: {{ filesPodName }}</span>
+          <button class="close-btn" (click)="closeFiles()">✕</button>
+        </div>
+        <app-file-manager [podName]="filesPodName"></app-file-manager>
       </div>
     </div>
   }

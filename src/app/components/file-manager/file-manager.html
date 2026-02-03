@@ -1,0 +1,85 @@
+<div class="file-manager">
+  <div class="section">
+    <h3>📤 Dosya Yükle</h3>
+    <div class="row">
+      <input type="file" (change)="onFileSelect($event)">
+      <input type="text" [(ngModel)]="uploadPath" placeholder="Hedef klasör">
+      <button (click)="upload()" [disabled]="!selectedFile || uploading">
+        {{ uploading ? 'Yükleniyor...' : 'Yükle' }}
+      </button>
+    </div>
+    @if (uploading) {
+      <div class="progress">
+        <div class="progress-bar" [style.width.%]="uploadProgress"></div>
+        <span>{{ uploadProgress }}%</span>
+      </div>
+    }
+  </div>
+
+  <div class="section">
+    <h3>📥 Dosya İndir</h3>
+    <div class="row">
+      <input type="text" [(ngModel)]="downloadPath" placeholder="/path/to/file.txt">
+      <button (click)="download()" [disabled]="downloading">
+        {{ downloading ? 'İndiriliyor...' : 'İndir' }}
+      </button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <h3>📁 Dosyalar: {{ currentPath }}</h3>
+      <div class="actions">
+        <button (click)="goUp()">Üst Klasör</button>
+        <button (click)="loadFiles()">Yenile</button>
+      </div>
+    </div>
+
+    @if (loadingFiles) {
+      <div class="info">Dosyalar yükleniyor...</div>
+    } @else {
+      <div class="info">Toplam: {{ files.length }} öğe</div>
+      <div class="table-wrapper">
+        <table>
+        <thead>
+          <tr>
+            <th>Ad</th>
+            <th>Boyut</th>
+            <th>Tarih</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (file of files; track file.name) {
+            <tr>
+              <td class="name">
+                {{ file.isDirectory ? '📁' : '📄' }} {{ file.name }}
+              </td>
+              <td>{{ file.isDirectory ? '-' : (file.size | fileSize) }}</td>
+              <td>{{ file.modifiedAt ? (file.modifiedAt | date:'short') : '-' }}</td>
+              <td class="actions">
+                @if (!file.isDirectory) {
+                  <button (click)="downloadFile(file)">İndir</button>
+                } @else {
+                  <button (click)="openFolder(file)">Aç</button>
+                }
+              </td>
+            </tr>
+          }
+          @if (files.length === 0) {
+            <tr>
+              <td colspan="4" class="empty">Bu klasörde dosya yok.</td>
+            </tr>
+          }
+        </tbody>
+        </table>
+      </div>
+    }
+  </div>
+
+  @if (statusMessage) {
+    <div class="status" [class.success]="statusKind === 'success'" [class.error]="statusKind === 'error'" [class.info]="statusKind === 'info'">
+      {{ statusMessage }}
+    </div>
+  }
+</div>
